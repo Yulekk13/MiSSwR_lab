@@ -22,10 +22,31 @@ walls(90:100,50) = 1;
 setOccupancy(map,[1 1],walls,"grid")
 % show(map)
 
+% Set start and goal poses.
+start = [10 10 0];
+goal = [90 90 0];
+
+% Show start and goal positions of robot.
+hold on
+plot(start(1),start(2),'ro')
+plot(goal(1),goal(2),'mo')
+
+% Show start and goal heading angle using a line.
+r = 0.5;
+plot([start(1),start(1) + r*cos(start(3))],[start(2),start(2) + r*sin(start(3))],'r-')
+plot([goal(1),goal(1) + r*cos(goal(3))],[goal(2),goal(2) + r*sin(goal(3))],'m-')
+hold off
+
+%%
+
+inflatedMap = map;
+inflate(inflatedMap,0.1);
+
 ss = stateSpaceSE2;
 ss.StateBounds = [map.XWorldLimits; map.YWorldLimits; [-pi pi]];
 
-sv = validatorOccupancyMap(ss,Map=map);
+sv = validatorOccupancyMap(ss);
+sv.Map = inflatedMap;
 sv.ValidationDistance = 0.01;
 
 planner = plannerPRM(ss,sv); % tutaj wybierasz funkcje  plannerPRM(ss,sv, "MaxConnectionDistance", 1, "MaxNumNodes", 200)
