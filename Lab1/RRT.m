@@ -1,14 +1,22 @@
-%% Własne
+clc
+close all
+clear
 
+%% User input for parameters
+maxConnectionDistance = input('Enter MaxConnectionDistance: ');
+maxIterations = input('Enter MaxIterations: ');
+validationDistance = input('Enter ValidationDistance: ');
+
+%%
 map = binaryOccupancyMap(100, 100, 1);
 occ = zeros(100, 100);
 
-occ(1,:) = 1;       % Górna ściana
-occ(end,:) = 1;     % Dolna ściana
-occ(:,1) = 1;  % Lewa ściana (z przerwą w środku)
-occ(:,end) = 1; % Prawa ściana (z przerwą w środku)
+occ(1,:) = 1;       % Top wall
+occ(end,:) = 1;     % Bottom wall
+occ(:,1) = 1;  % Left wall (with a gap in the middle)
+occ(:,end) = 1; % Right wall (with a gap in the middle)
 
-% Blok Wypełnienie
+% Block Fill
 occ(1:40, 25) = 1;
 occ(1:60, 50) = 1;
 occ(70, 15:35) = 1;
@@ -16,15 +24,15 @@ occ(60:100, 75) = 1;
 occ(35, 75:100) = 1;
 occ(90:100, 50) = 1;
 
-% Zewnętrzne ściany
-occ(1, :) = 1; % Górna ściana
-occ(end, :) = 1; % Dolna ściana
-occ(:, 1) = 1; % Lewa ściana
-occ(:, end) = 1; % Prawa ściana
+% Outer walls
+occ(1, :) = 1; % Top wall
+occ(end, :) = 1; % Bottom wall
+occ(:, 1) = 1; % Left wall
+occ(:, end) = 1; % Right wall
 
 setOccupancy(map, occ);
 
-%% Show
+%% Show map
 figure
 show(map)
 title('Custom Floor Plan')
@@ -48,32 +56,27 @@ plot([start(1),start(1) + r*cos(start(3))],[start(2),start(2) + r*sin(start(3))]
 plot([goal(1),goal(1) + r*cos(goal(3))],[goal(2),goal(2) + r*sin(goal(3))],'m-')
 hold off
 
-
-
 bounds = [inflatedMap.XWorldLimits; inflatedMap.YWorldLimits; [-pi pi]];
 
 ss = stateSpaceDubins(bounds);
 ss.MinTurningRadius = 0.4;
 
-
 stateValidator = validatorOccupancyMap(ss);
 stateValidator.Map = inflatedMap;
-stateValidator.ValidationDistance = 0.05;
+stateValidator.ValidationDistance = validationDistance;
 
 planner = plannerRRT(ss,stateValidator);
-planner.MaxConnectionDistance = 2.0;
-planner.MaxIterations = 120000;
+planner.MaxConnectionDistance = maxConnectionDistance;
+planner.MaxIterations = maxIterations;
 
 planner.GoalReachedFcn = @exampleHelperCheckIfGoal;
-
 
 rng default
 [pthObj,solnInfo] = plan(planner,start,goal);
 
 if isempty(pthObj.States)
-    error('Planner nie znalazł ścieżki! Sprawdź mapę, start, goal i parametry planera.')
+    error('Planner did not find a path! Check the map, start, goal, and planner parameters.')
 end
-
 
 shortenedPath = shortenpath(pthObj,stateValidator);
 originalLength = pathLength(pthObj)
@@ -99,7 +102,7 @@ plot(goal(1),goal(2),'mo')
 legend('search tree','original path','shortened path')
 hold off
 
-%%
+%% Goal-reaching function
 function isReached = exampleHelperCheckIfGoal(planner, goalState, newState)
 isReached = false;
 threshold = 0.1;
@@ -107,4 +110,3 @@ if planner.StateSpace.distance(newState, goalState) < threshold
     isReached = true;
 end
 end
-
