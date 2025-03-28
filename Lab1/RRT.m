@@ -78,7 +78,7 @@ if isempty(pthObj.States)
     error('Planner did not find a path! Check the map, start, goal, and planner parameters.')
 end
 
-shortenedPath = shortenpath(pthObj,stateValidator);
+shortenedPath = shortenpath(pthObj,stateValidator)
 originalLength = pathLength(pthObj)
 shortenedLength = pathLength(shortenedPath)
 
