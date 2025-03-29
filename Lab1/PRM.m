@@ -58,6 +58,9 @@ goal = [90, 10, 0];
 
 % Plot map and graph
 show(sv.Map)
+titleText = sprintf('Algorithm PRM\nMaxConnectionDistance: %.2f | MaxNodes: %d', ...
+    maxConnectionDistance, maxNodes);
+title(titleText);
 hold on
 plot(nodes(:, 1), nodes(:, 2), "*", "Color", "b", "LineWidth", 2)
 for i = 1:size(edges, 1)
