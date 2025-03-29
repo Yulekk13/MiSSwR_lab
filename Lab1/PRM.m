@@ -7,7 +7,7 @@ maxConnectionDistance = input('Enter MaxConnectionDistance: ');
 maxNodes = input('Enter MaxNodes: ');
 
 %%
-
+tic
 map = binaryOccupancyMap(100, 100, 1);
 occ = zeros(100, 100);
 
@@ -17,12 +17,27 @@ occ(:,1) = 1;       % Left wall (with a gap in the middle)
 occ(:,end) = 1;     % Right wall (with a gap in the middle)
 
 % Block Fill
-occ(1:40, 25) = 1;
-occ(1:60, 50) = 1;
-occ(70, 15:35) = 1;
-occ(60:100, 75) = 1;
-occ(35, 75:100) = 1;
-occ(90:100, 50) = 1;
+% First map
+% occ(1:40, 25) = 1;
+% occ(1:60, 50) = 1;
+% occ(70, 15:35) = 1;
+% occ(60:100, 75) = 1;
+% occ(35, 75:100) = 1;
+% occ(90:100, 50) = 1;
+
+% Second map
+occ(20, 1:20) = 1;
+occ(1:20, 55) = 1;
+occ(20:40, 40) = 1;
+occ(20:40, 75) = 1;
+occ(40:60, 80) = 1;
+occ(40, 20:85) = 1;
+occ(40:55, 20) = 1;
+occ(60:80, 35) = 1;
+occ(80:90, 50) = 1;
+occ(60:80, 65) = 1;
+occ(80, 20:65) = 1;
+occ(80, 80:100) = 1;
 
 % External walls
 occ(1, :) = 1;  % Upper wall
@@ -75,10 +90,18 @@ plot(goal(1), goal(2), "*", "Color", "r", "LineWidth", 3)
 rng(100, "twister");
 [pthObj, solnInfo] = plan(planner, start, goal);
 
+toc
 % Visualize the results
 if solnInfo.IsPathFound
     interpolate(pthObj, 1000);
     plot(pthObj.States(:, 1), pthObj.States(:, 2), "Color", [0.85 0.325 0.098], "LineWidth", 2)
+
+    totalDistance = 0;
+    for i = 1:length(pthObj.States)-1
+        totalDistance = totalDistance + norm(pthObj.States(i+1, 1:2) - pthObj.States(i, 1:2));
+    end
+    
+    fprintf('Długość trasy: %.2f', totalDistance);
 else
     disp("Path not found")
 end

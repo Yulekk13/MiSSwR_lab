@@ -8,10 +8,7 @@ maxIterations = input('Enter MaxIterations: ');
 validationDistance = input('Enter ValidationDistance: ');
 
 %%
-clc
-close all
-clear
-
+tic
 map = binaryOccupancyMap(100, 100, 1);
 occ = zeros(100, 100);
 
@@ -30,17 +27,17 @@ occ(35, 75:100) = 1;
 occ(90:100, 50) = 1;
 
 % Second map
-% occ(1:10, 60) = 1;
 % occ(20, 1:20) = 1;
-% occ(1:20, 60) = 1;
-% 
-% occ(15:40, 80) = 1;
+% occ(1:20, 55) = 1;
+% occ(20:40, 40) = 1;
+% occ(20:40, 75) = 1;
+% occ(40:60, 80) = 1;
 % occ(40, 20:85) = 1;
 % occ(40:55, 20) = 1;
-% occ(65:80, 35) = 1;
+% occ(60:80, 35) = 1;
 % occ(80:90, 50) = 1;
-% occ(65:80, 65) = 1;
-% occ(80, 15:65) = 1;
+% occ(60:80, 65) = 1;
+% occ(80, 20:65) = 1;
 % occ(80, 80:100) = 1;
 
 
@@ -101,6 +98,8 @@ shortenedPath = shortenpath(pthObj,stateValidator)
 originalLength = pathLength(pthObj)
 shortenedLength = pathLength(shortenedPath)
 
+toc
+
 show(map)
 titleText = sprintf('Algorithm RRT\nMaxConnectionDistance: %.2f | MaxIterations: %d | ValidationDistance: %.2f', ...
     maxConnectionDistance, maxIterations, validationDistance);
@@ -124,7 +123,6 @@ plot(goal(1),goal(2),'mo')
 legend('search tree','original path','shortened path')
 
 hold off
-
 %% Goal-reaching function
 function isReached = exampleHelperCheckIfGoal(planner, goalState, newState)
 isReached = false;
