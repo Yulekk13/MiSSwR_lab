@@ -1,4 +1,5 @@
 % Pozycja
+load('simout.mat')
 figure;
 plot(out.pos.Time, squeeze(out.pos.Data(1,1,:)), 'r', 'DisplayName', 'X');
 hold on;
