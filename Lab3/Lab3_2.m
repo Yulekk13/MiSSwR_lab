@@ -128,7 +128,7 @@ slamAlg.LoopClosureThreshold = 210;
 slamAlg.LoopClosureSearchRadius = 8;
 
 for i=1:length(sensorReadings)
-    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, sensorReadings(i).Location);
+    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, pc2scan(sensorReadings(i)));
     if isScanAccepted
         fprintf('Added scan %d \n', i);
     end
@@ -142,7 +142,7 @@ firstTimeLCDetected = false;
 
 figure;
 for i=10:length(sensorReadings)
-    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, sensorReadings(i).Location);
+    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, pc2scan(sensorReadings(i)));
     if ~isScanAccepted
         continue;
     end
