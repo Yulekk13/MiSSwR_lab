@@ -1,52 +1,124 @@
-% Pozycja
-load('simout.mat')
+% Wyświetlanie danych z symulacji czujników pojazdu
+close all
+load('out.mat')
+% out.mat - plik zapisanych danych wyjściowych z simulink
+
+t = linspace(0, length(out.pos), length(out.pos)); % lub: t = out.time jeśli dostępny
+
+
+pos = squeeze(out.pos.Data);  
+t = out.pos.Time;           
+
+% Wykres trajektorii 3D
 figure;
-plot(out.pos.Time, squeeze(out.pos.Data(1,1,:)), 'r', 'DisplayName', 'X');
-hold on;
-plot(out.pos.Time, squeeze(out.pos.Data(1,2,:)), 'g', 'DisplayName', 'Y');
-plot(out.pos.Time, squeeze(out.pos.Data(1,3,:)), 'b', 'DisplayName', 'Z');
-hold off;
-title('Pozycja');
-xlabel('Czas [s]');
-ylabel('Pozycja [m]');
-legend;
+plot3(pos(1,:), pos(2,:), pos(3,:), 'LineWidth', 2);
+xlabel('X[m]'); ylabel('Y[m]'); zlabel('Z[m]');
+title('Trajektoria pojazdu');
 grid on;
-    
-% Prędkość
+
+%% Wydobycie danych prędkości
+vel = squeeze(out.vel.Data); 
+
+% Obliczenie modułu wektora prędkości
+v_modul = vecnorm(vel, 2, 1); 
+
+% Wykres modułu prędkości w czasie
 figure;
-plot(out.vel.Time, squeeze(out.vel.Data(1,1,:)), 'r', 'DisplayName', 'Vx');
-hold on;
-plot(out.vel.Time, squeeze(out.vel.Data(1,2,:)), 'g', 'DisplayName', 'Vy');
-plot(out.vel.Time, squeeze(out.vel.Data(1,3,:)), 'b', 'DisplayName', 'Vz');
-hold off;
-title('Prędkość');
+plot(t, v_modul, 'LineWidth', 2);
 xlabel('Czas [s]');
 ylabel('Prędkość [m/s]');
-legend;
+title('Prędkość pojazdu w czasie');
 grid on;
-    
-% Orientacja
+
+
+%% Dane orientacji
+orien = squeeze(out.orien.Data);  
+t = out.orien.Time;
+
+% Wykres orientacji w czasie
 figure;
-plot(out.orient.Time, squeeze(out.orient.Data(1,1,:)), 'r', 'DisplayName', 'Roll');
-hold on;
-plot(out.orient.Time, squeeze(out.orient.Data(1,2,:)), 'g', 'DisplayName', 'Pitch');
-plot(out.orient.Time, squeeze(out.orient.Data(1,3,:)), 'b', 'DisplayName', 'Yaw');
-hold off;
-title('Orientacja');
+plot(t, orien(1,:), 'r', 'LineWidth', 1.5); hold on;
+plot(t, orien(2,:), 'g', 'LineWidth', 1.5);
+plot(t, orien(3,:), 'b', 'LineWidth', 1.5);
 xlabel('Czas [s]');
-ylabel('Kąty [rad]');
-legend;
+ylabel('Orientacja [rad]');
+legend('Roll', 'Pitch', 'Yaw');
+title('Orientacja pojazdu w czasie');
 grid on;
-  
-% Przyspieszenie
+
+
+%% Przyspieszenie
+acc = squeeze(out.acc.Data);
+t = out.acc.Time;
+
+% Wykres przyspieszenia w czasie
 figure;
-plot(out.acc.Time, squeeze(out.acc.Data(1,1,:)), 'r', 'DisplayName', 'Ax');
-hold on;
-plot(out.acc.Time, squeeze(out.acc.Data(1,2,:)), 'g', 'DisplayName', 'Ay');
-plot(out.acc.Time, squeeze(out.acc.Data(1,3,:)), 'b', 'DisplayName', 'Az');
-hold off;
-title('Przyspieszenie');
+plot(t, acc(1,:), 'r', 'LineWidth', 1.5); hold on;
+plot(t, acc(2,:), 'g', 'LineWidth', 1.5);
+plot(t, acc(3,:), 'b', 'LineWidth', 1.5);
 xlabel('Czas [s]');
-ylabel('Przyspieszenie [m/s²]');
-legend;
+ylabel('Przyspieszenie [m/s^2]');
+legend('X', 'Y', 'Z');
+title('Składowe przyspieszenia w czasie');
+grid on;
+
+
+%% Prędkość kątowa
+ang = squeeze(out.ang.Data);
+t = out.ang.Time;
+
+figure;
+plot(t, ang(1,:), 'r', 'LineWidth', 1.5); hold on;
+plot(t, ang(2,:), 'g', 'LineWidth', 1.5);
+plot(t, ang(3,:), 'b', 'LineWidth', 1.5);
+xlabel('Czas [s]');
+ylabel('Prędkość kątowa [rad/s]');
+legend('Roll', 'Pitch', 'Yaw');
+title('Składowe prędkości kątowej w czasie');
+grid on;
+
+%% Wizualizacja wykryć z radaru
+n = numel(out.radar.Detections);  % liczba detekcji
+meas_sample = out.radar.Detections(1).Measurement.Data;
+[dim, ~, T] = size(meas_sample);
+
+meas_all = zeros(dim, T, n);
+
+for i = 1:n
+    meas_all(:,:,i) = squeeze(out.radar.Detections(i).Measurement.Data);
+end
+
+t = out.radar.Detections(1).Measurement.Time;
+
+figure;
+for i = 1:min(n, 5)
+     plot(t, squeeze(meas_all(1,:,i))); hold on;
+end
+xlabel('Czas [s]');
+ylabel('Zasięg [m]');
+title('Zasięg wykrytych obiektów przez radar');
+grid on;
+
+%% Wizualizacja detekcji z kamery
+n = numel(out.vision.Detections);  % liczba detekcji
+meas_sample = out.vision.Detections(1).Measurement.Data;
+[dim, ~, T] = size(meas_sample);
+
+meas_all = zeros(dim, T, n);
+
+for i = 1:n
+    meas_all(:,:,i) = squeeze(out.vision.Detections(i).Measurement.Data);
+end
+
+meas_all = meas_all * -1;
+
+t = out.vision.Detections(1).Measurement.Time;
+
+figure;
+for i = 1:min(n, 5)  % pokaż max 5 obiektów na raz
+    plot(t, squeeze(meas_all(1,:,i))); hold on;
+end
+xlabel('Czas [s]');
+ylabel('Zasięg [m]');
+title('Zasięg wykrytych obiektów przez kamerę');
 grid on;
