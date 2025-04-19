@@ -1,6 +1,6 @@
-% clc; 
-% clear; 
-% close all;
+clc;
+clear;
+close all;
 
 scenario = robotScenario(UpdateRate=5);
 
@@ -59,10 +59,12 @@ numWaypoints = size(waypoints,1);
 % Robot arrival time at first waypoint.
 firstInTime = 0;
 % Robot arrival time at last waypoint.
-lastInTime = firstInTime + (numWaypoints-1);
+speedFactor = 3;
+lastInTime = firstInTime + speedFactor*(numWaypoints-1);
+timeOfArrival = linspace(firstInTime, lastInTime, numWaypoints);
 % Generate waypoint trajectory with waypoints from planned path.
 traj = waypointTrajectory(SampleRate=10,...
-    TimeOfArrival=firstInTime:lastInTime, ...
+    TimeOfArrival=timeOfArrival, ...
     Waypoints=[waypoints, robotheight*ones(numWaypoints,1)], ...
     ReferenceFrame="ENU");
 
@@ -70,13 +72,38 @@ huskyRobot = loadrobot("clearpathHusky");
 
 platform = robotPlatform("husky",scenario, RigidBodyTree=huskyRobot,...
     BaseTrajectory=traj);
-% Adding sensor on robot
-updateMesh(platform,"RigidBodyTree",Object=huskyRobot)
-lidar = robotSensor("LIDAR",platform, robotLidarPointCloudGenerator(), ...
-    UpdateRate=scenario.UpdateRate);
-%
+% updateMesh(platform,"RigidBodyTree",Object=huskyRobot)
 
+% Lidar
+Lidar_Range = 5;
+lidarModel = robotLidarPointCloudGenerator(...
+    UpdateRate=100, ...
+    MaxRange=5, ...
+    RangeAccuracy=0.20, ...
+    AzimuthResolution=0.16, ...
+    ElevationResolution=1.25, ...
+    AzimuthLimits=[-180 180], ...
+    ElevationLimits=[0 10], ...
+    HasNoise=false, ...
+    HasOrganizedOutput=true);
 
+lidar = robotSensor("lidar", platform, lidarModel, ...
+    MountingLocation=[0 0 0.3], MountingAngles=[0 0 0],UpdateRate=scenario.UpdateRate);
+
+% SLAM
+maxLidarRange = 10;
+mapResolution = 20;
+
+% Inicjalizacja obiektu SLAM
+slamAlg = lidarSLAM(mapResolution, maxLidarRange);
+slamAlg.LoopClosureThreshold = 210;
+slamAlg.LoopClosureSearchRadius = 8;
+slamAlg.OptimizationInterval = 10;
+
+% Inicjalizacja mapy zajętości
+occupancyMap = occupancyMap(20, 20, 20);
+
+% Start simulation
 [ax,plotFrames] = show3D(scenario);
 lightangle(-45,30)
 view(60,50)
@@ -119,29 +146,11 @@ end
 
 restart(scenario)
 
-%% SLAM
-maxLidarRange = 8;
-mapResolution = 20;
-slamAlg = lidarSLAM(mapResolution, maxLidarRange);
-
-slamAlg.LoopClosureThreshold = 210;  
-slamAlg.LoopClosureSearchRadius = 8;
-
-for i=1:length(sensorReadings)
-    [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, pc2scan(sensorReadings(i)));
-    if isScanAccepted
-        fprintf('Added scan %d \n', i);
-    end
-end
-
-figure;
-show(slamAlg);
-title({'Map of the Environment','Pose Graph for Initial 10 Scans'});
-
+% SLAM
 firstTimeLCDetected = false;
 
 figure;
-for i=10:length(sensorReadings)
+for i=1:length(sensorReadings)
     [isScanAccepted, loopClosureInfo, optimizationInfo] = addScan(slamAlg, pc2scan(sensorReadings(i)));
     if ~isScanAccepted
         continue;
@@ -151,7 +160,7 @@ for i=10:length(sensorReadings)
     if optimizationInfo.IsPerformed && ~firstTimeLCDetected
         show(slamAlg, 'Poses', 'off');
         hold on;
-        show(slamAlg.PoseGraph); 
+        show(slamAlg.PoseGraph);
         hold off;
         firstTimeLCDetected = true;
         drawnow
@@ -166,7 +175,7 @@ title({'Final Built Map of the Environment', 'Trajectory of the Robot'});
 [scans, optimizedPoses]  = scansAndPoses(slamAlg);
 map = buildMap(scans, optimizedPoses, mapResolution, maxLidarRange);
 
-figure; 
+figure;
 show(map);
 hold on
 show(slamAlg.PoseGraph, 'IDs', 'off');
